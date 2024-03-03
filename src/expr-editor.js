@@ -1,15 +1,6 @@
 import { LitElement, css, html } from 'lit';
 import { countries } from './countries';
 
-const template = document.createElement('template');
-template.innerHTML = `
-  <div></div>
-`;
-
-/**
- * @slot
- * @csspart
- */
 export class ExprEditor extends LitElement {
   static get properties() {
     return {
@@ -41,8 +32,6 @@ export class ExprEditor extends LitElement {
     const val = this.value;
 
     this.closeAllLists();
-    // console.log(e.data);
-    // console.log(this);
     const inputElement = this.shadowRoot.getElementById('exprInput');
 
     const arr = this.data;
@@ -61,10 +50,13 @@ export class ExprEditor extends LitElement {
         /*insert a input field that will hold the current array item's value:*/
         b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
         /*execute a function when someone clicks on the item value (DIV element):*/
-        b.addEventListener('click', function (e) {
-          /*insert the value for the autocomplete text field:*/
+        // b.addEventListener('click', this.handleClick);
+        b.addEventListener('click', function () {
           inputElement.value = this.getElementsByTagName('input')[0].value;
-          closeAllLists();
+          const list = this.parentElement;
+          while (list.firstChild) {
+            list.removeChild(list.firstChild);
+          }
         });
         list.appendChild(b);
       }

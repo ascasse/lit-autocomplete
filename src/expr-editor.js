@@ -4,6 +4,7 @@ import { countries } from './countries';
 export class ExprEditor extends LitElement {
   static get properties() {
     return {
+      expression: { expression: String, position: Number },
       data: { type: [] },
     };
   }
@@ -11,78 +12,78 @@ export class ExprEditor extends LitElement {
   constructor() {
     super();
     this.data = countries;
+    this.expression = { expression: '', position: 0 };
   }
 
   render() {
+    const currentWord =
+      this.expression.expression.length > 0
+        ? this.getCurrentWord(this.expression)
+        : '';
+
+    const found =
+      currentWord.length > 0 ? this.getMatchingEntries(currentWord) : [];
+
     return html`
       <div class="autocomplete" style="width:300px;">
         <input
           id="exprInput"
           type="text"
-          name="myCountry"
-          placeholder="Country"
-          @input=${this._onInput}
+          name="exprInput"
+          .value=${this.expression.expression}
+          placeholder="expression"
+          @input=${this.handleInput}
         />
-        <div id="autocomplete-list" class="autocomplete-items"></div>
+        <div id="autocomplete-list" class="autocomplete-items">
+          ${found.map(
+            item => html` <div @click=${this.handleSelection}>
+              ${item}<input type="hidden" value="${item}" />
+            </div>`
+          )}
+        </div>
       </div>
     `;
   }
 
-  _onInput(e) {
-    const val = this.value;
+  handleInput(e) {
+    this.expression = {
+      expression: e.target.value,
+      position: e.target.selectionStart,
+    };
+  }
 
-    this.closeAllLists();
-    const inputElement = this.shadowRoot.getElementById('exprInput');
-
-    const arr = this.data;
-    const txt = inputElement.value;
-    const list = this.shadowRoot.getElementById('autocomplete-list');
-    const cursorPosition = inputElement.selectionStart;
-
-    const currentWord = this.getCurrentWord(txt, cursorPosition);
-    const found = this.getMatchingEntries(currentWord);
-    found.forEach((item) => {
-      let b = document.createElement('div');
-      b.innerHTML = `<strong>${item.slice(0, currentWord.length)}</strong>${item.slice(currentWord.length)}<input type='hidden' value='${item}'>`
-      b.addEventListener('click', function () {
-        const selected = this.getElementsByTagName('input')[0].value;
-        inputElement.value = String(inputElement.value).replace(currentWord, selected)
-        const list = this.parentElement;
-        while (list.firstChild) {
-          list.removeChild(list.firstChild);
-        }
-      });
-      list.appendChild(b)
-    })
+  handleSelection(e) {
+    const selection = e.target.getElementsByTagName('input')[0].value;
+    const currentWord = this.getCurrentWord(this.expression);
+    this.expression = {
+      expression: this.expression.expression.replace(currentWord, selection),
+      position: this.expression.position,
+    };
   }
 
   getMatchingEntries(currentWord) {
-    return this.data.filter(entry => entry.slice(0, currentWord.length).toUpperCase() == currentWord.toUpperCase());
+    return this.data.filter(
+      entry =>
+        entry.slice(0, currentWord.length).toUpperCase() ===
+          currentWord.toUpperCase() && entry.length !== currentWord.length
+    );
   }
 
-  getCurrentWord(inputValue, cursorPosition) {
-    // Find the start and end indices of the word containing the cursor
-    let wordStart = cursorPosition;
-    while (wordStart > 0 && /\S/.test(inputValue[wordStart - 1])) {
+  getCurrentWord(input) {
+    const { expression, position } = input;
+
+    let wordStart = position;
+    while (wordStart > 0 && /\S/.test(expression[wordStart - 1])) {
       wordStart--;
     }
 
-    let wordEnd = cursorPosition;
-    while (wordEnd < inputValue.length && /\S/.test(inputValue[wordEnd])) {
+    let wordEnd = position;
+    while (wordEnd < expression.length && /\S/.test(expression[wordEnd])) {
       wordEnd++;
     }
-    const currentWord = inputValue.substring(wordStart, wordEnd);
-    console.log('Word at cursor position:', currentWord);
+    const currentWord = expression.substring(wordStart, wordEnd);
+    // console.log('Word at cursor position:', currentWord);
     return currentWord;
-  }
-
-  closeAllLists(element) {
-    /*close all autocomplete lists in the document,
-      except the one passed as an argument:*/
-    const list = this.shadowRoot.getElementById('autocomplete-list');
-    while (list.firstChild) {
-      list.removeChild(list.firstChild);
-    }
   }
 
   static get styles() {

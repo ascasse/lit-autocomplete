@@ -37,30 +37,43 @@ export class ExprEditor extends LitElement {
     const arr = this.data;
     const txt = inputElement.value;
     const list = this.shadowRoot.getElementById('autocomplete-list');
+    const cursorPosition = inputElement.selectionStart;
 
-    /*for each item in the array...*/
-    for (let i = 0; i < arr.length; i++) {
-      /*check if the item starts with the same letters as the text field value:*/
-      if (arr[i].slice(0, txt.length).toUpperCase() == txt.toUpperCase()) {
-        /*create a DIV element for each matching element:*/
-        let b = document.createElement('DIV');
-        /*make the matching letters bold:*/
-        b.innerHTML = '<strong>' + arr[i].slice(0, txt.length) + '</strong>';
-        b.innerHTML += arr[i].slice(txt.length);
-        /*insert a input field that will hold the current array item's value:*/
-        b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
-        /*execute a function when someone clicks on the item value (DIV element):*/
-        // b.addEventListener('click', this.handleClick);
-        b.addEventListener('click', function () {
-          inputElement.value = this.getElementsByTagName('input')[0].value;
-          const list = this.parentElement;
-          while (list.firstChild) {
-            list.removeChild(list.firstChild);
-          }
-        });
-        list.appendChild(b);
-      }
+    const currentWord = this.getCurrentWord(txt, cursorPosition);
+    const found = this.getMatchingEntries(currentWord);
+    found.forEach((item) => {
+      let b = document.createElement('div');
+      b.innerHTML = `<strong>${item.slice(0, currentWord.length)}</strong>${item.slice(currentWord.length)}<input type='hidden' value='${item}'>`
+      b.addEventListener('click', function () {
+        const selected = this.getElementsByTagName('input')[0].value;
+        inputElement.value = String(inputElement.value).replace(currentWord, selected)
+        const list = this.parentElement;
+        while (list.firstChild) {
+          list.removeChild(list.firstChild);
+        }
+      });
+      list.appendChild(b)
+    })
+  }
+
+  getMatchingEntries(currentWord) {
+    return this.data.filter(entry => entry.slice(0, currentWord.length).toUpperCase() == currentWord.toUpperCase());
+  }
+
+  getCurrentWord(inputValue, cursorPosition) {
+    // Find the start and end indices of the word containing the cursor
+    let wordStart = cursorPosition;
+    while (wordStart > 0 && /\S/.test(inputValue[wordStart - 1])) {
+      wordStart--;
     }
+
+    let wordEnd = cursorPosition;
+    while (wordEnd < inputValue.length && /\S/.test(inputValue[wordEnd])) {
+      wordEnd++;
+    }
+    const currentWord = inputValue.substring(wordStart, wordEnd);
+    console.log('Word at cursor position:', currentWord);
+    return currentWord;
   }
 
   closeAllLists(element) {
